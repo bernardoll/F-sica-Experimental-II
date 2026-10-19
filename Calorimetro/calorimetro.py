@@ -16,20 +16,31 @@ tempo = np.array(file["tempo (s)"].tolist())
 # Incertezas
 s_temperatura = np.array(file["s_temp. (C)"].tolist())
 
-ajuste = odr_fit(f, tempo, temperatura, [2.0, 0.0], weight_y=s_temperatura, weight_x=None)
+# Deletando dados desconsiderados
+temperatura = temperatura[2:]
+tempo = tempo[2:]
+s_temperatura = s_temperatura[2:]
+
+wy = 1.0 / (s_temperatura ** 2)
+
+ajuste = odr_fit(f, tempo, temperatura, [2.0, 0.0], weight_y=wy, weight_x=None)
 
 # Resultado
 a_otimo, T_0_otimo = ajuste.beta
 erro_a, erro_T_0 = ajuste.sd_beta
+qui_quadrado = ajuste.sum_square
+ngl = len(tempo) - 2
 
 print("Resultado do Ajuste:")
-print(f"a (slope)   = {a_otimo:.8f} ± {erro_a:.8f}")
-print(f"T_0 (interc) = {T_0_otimo:.8f} ± {erro_T_0:.8f}")
+print(f"a = {a_otimo:.8f} ± {erro_a:.8f}")
+print(f"T_0 = {T_0_otimo:.8f} ± {erro_T_0:.8f}")
+print(f"qui_quadrado = {qui_quadrado:.8f}")
+print(f"ngl = {ngl}")
 
 fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(8, 7), sharex=True, gridspec_kw={'height_ratios': [3, 1]})
 fig.subplots_adjust(hspace=0.05)
 
-# plotagem do erro - CORRIGIDO AQUI
+# plotagem do erro
 ax1.errorbar(tempo, temperatura, yerr=s_temperatura, fmt='o', ms=5, label='Dados com barras de erro')
 
 # plotagem da curva
